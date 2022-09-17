@@ -2,6 +2,7 @@
 this=$(dirname $(realpath $0))
 arch=$(uname -m)
 os=$(uname -o)
+os="Android"
 ver=$(curl -s http://dl-cdn.alpinelinux.org/alpine/latest-stable/releases/$arch/latest-releases.yaml | grep -m 1 -o version.* | sed -e 's/[^0-9.]*//g' -e 's/-$//')
 if [ -z "$ver" ]; then
 	if [ ! -f latest-releases.yaml ]; then
@@ -49,10 +50,22 @@ umount -l $root/proc/
 umount -l $root/sys/' > $this/init
 	chmod 700 $this/init
 elif [ $os = "Android" ]; then
-	echo "android"
+	PREFIX=$(realpath $this/..)
 	alpine="$(realpath $PREFIX/..)/alpine"
 	if [ ! -d $alpine ]; then
 		mkdir $alpine
 	fi
-	echo $alpine
+	tar -xf $rootfs -C $alpine/
+	echo '#!/data/data/com.termux/files/usr/bin/bash -e
+root=$(dirname $(realpath $0))
+unset LD_PRELOAD
+addresolvconf ()
+{
+  android=\$(getprop ro.build.version.release)
+  if [ \${android%%.*} -lt 8 ]; then
+  [ \$(command -v getprop) ] && getprop | sed -n -e 's/^\[net\.dns.\]: \[\(.*\)\]/\1/p' | sed '/^\s*$/d' | sed 's/^/nameserver /' > \${PREFIX}/share/TermuxAlpine/etc/resolv.conf
+  fi
+}
+addresolvconf
+exec proot --link2symlink -0 -r $root/ -b /dev/ -b /sys/ -b /proc/ -b /sdcard -b /storage -b \$HOME -w /home /usr/bin/env TMPDIR=/tmp HOME=/home PREFIX=/usr SHELL=/bin/sh TERM="\$TERM" LANG=\$LANG PATH=/bin:/usr/bin:/sbin:/usr/sbin /bin/sh --login' > $alpine/init
 fi
