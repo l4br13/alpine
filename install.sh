@@ -33,7 +33,6 @@ sha256sum -c --quiet ${rootfs}.sha256 || {
 		printf "$rootfs : corrupted\n"
 		exit 1
 }
-tar -xf $rootfs
 if [ $os = "GNU/Linux" ]; then
 	tar -xf $rootfs
 	echo '#!/bin/sh
