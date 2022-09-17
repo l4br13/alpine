@@ -1,6 +1,7 @@
 #!/bin/sh
 this=$(dirname $(realpath $0))
 arch=$(uname -m)
+os=$(uname -o)
 ver=$(curl -s http://dl-cdn.alpinelinux.org/alpine/latest-stable/releases/$arch/latest-releases.yaml | grep -m 1 -o version.* | sed -e 's/[^0-9.]*//g' -e 's/-$//')
 if [ -z "$ver" ]; then
 	if [ ! -f latest-releases.yaml ]; then
@@ -28,12 +29,14 @@ else
 		curl --progress-bar -L --fail --retry 4 -O "${url}.sha256"
 	fi
 fi
-sha256sum -c ${rootfs}.sha256 || {
+sha256sum -c --quiet ${rootfs}.sha256 || {
 		printf "$rootfs : corrupted\n"
 		exit 1
 }
 tar -xf $rootfs
-echo '#!/bin/sh
+if [ $os == "GNU/Linux" ]; then
+	tar -xf $rootfs
+	echo '#!/bin/sh
 if [ $(id -u) != 0 ]; then
 	exit
 fi
@@ -43,6 +46,8 @@ mount -t sysfs /sys $root/sys/
 cp /etc/resolv.conf $root/etc/resolv.conf
 chroot $root /bin/sh --login
 umount -l $root/proc/
-umount -l $root/sys/
-' > $this/init
-chmod 700 $this/init
+umount -l $root/sys/' > $this/init
+	chmod 700 $this/init
+elif [ $os == "Android"]; then
+	echo ${PREFIX}
+fi
