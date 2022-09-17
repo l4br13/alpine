@@ -48,6 +48,6 @@ chroot $root /bin/sh --login
 umount -l $root/proc/
 umount -l $root/sys/' > $this/init
 	chmod 700 $this/init
-elif [ $os == "Android"]; then
+elif [ $os == "Android" ]; then
 	echo ${PREFIX}
 fi
