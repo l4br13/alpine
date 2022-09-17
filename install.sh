@@ -34,7 +34,7 @@ sha256sum -c --quiet ${rootfs}.sha256 || {
 		exit 1
 }
 tar -xf $rootfs
-if [ $os == "GNU/Linux" ]; then
+if [ "$os" == "GNU/Linux" ]; then
 	tar -xf $rootfs
 	echo '#!/bin/sh
 if [ $(id -u) != 0 ]; then
@@ -48,6 +48,6 @@ chroot $root /bin/sh --login
 umount -l $root/proc/
 umount -l $root/sys/' > $this/init
 	chmod 700 $this/init
-elif [ $os == "Android" ]; then
+elif [ "$os" == "Android" ]; then
 	echo ${PREFIX}
 fi
