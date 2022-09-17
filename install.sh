@@ -2,7 +2,6 @@
 this=$(dirname $(realpath $0))
 arch=$(uname -m)
 os=$(uname -o)
-os="Android"
 ver=$(curl -s http://dl-cdn.alpinelinux.org/alpine/latest-stable/releases/$arch/latest-releases.yaml | grep -m 1 -o version.* | sed -e 's/[^0-9.]*//g' -e 's/-$//')
 if [ -z "$ver" ]; then
 	if [ ! -f latest-releases.yaml ]; then
@@ -50,7 +49,6 @@ umount -l $root/proc/
 umount -l $root/sys/' > $this/init
 	chmod 700 $this/init
 elif [ $os = "Android" ]; then
-	PREFIX=$(realpath $this/..)
 	alpine="$(realpath $PREFIX/..)/alpine"
 	if [ ! -d $alpine ]; then
 		mkdir $alpine
