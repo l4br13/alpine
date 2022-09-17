@@ -61,5 +61,5 @@ root=$(dirname $(realpath $0))
 unset LD_PRELOAD
 exec proot --link2symlink -0 -r $root/ -b /dev/ -b /sys/ -b /proc/ -b /sdcard -b /storage -b $HOME -w /home /usr/bin/env TMPDIR=/tmp HOME=/home PREFIX=/usr SHELL=/bin/sh TERM="$TERM" LANG=$LANG PATH=/bin:/usr/bin:/sbin:/usr/sbin /bin/sh --login' > $alpine/init
 	chmod +x $alpine/init
-	ln -sf $PREFIX/bin/startalpine $alpine/init
+	ln -sf $alpine/init $PREFIX/bin/startalpine
 fi
