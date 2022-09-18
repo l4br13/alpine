@@ -53,10 +53,27 @@ elif [ $os = "Android" ]; then
 		mkdir $alpine
 	fi
 	tar -xf $rootfs -C $alpine/
-	echo '#!/data/data/com.termux/files/usr/bin/bash -e
+	cat > $alpine/init <<- EOM
+#!/data/data/com.termux/files/usr/bin/bash -e
 root=$(dirname $(realpath $0))
 unset LD_PRELOAD
-exec proot --link2symlink -0 -r $root/ -b /dev/ -b /sys/ -b /proc/ -b /sdcard -b /storage -b $HOME -w /home /usr/bin/env TMPDIR=/tmp HOME=/home PREFIX=/usr SHELL=/bin/sh TERM="$TERM" LANG=$LANG PATH=/bin:/usr/bin:/sbin:/usr/sbin /bin/sh --login' > $alpine/init
+addresolvconf ()
+{
+  android=\$(getprop ro.build.version.release)
+  if [ \${android%%.*} -lt 8 ]; then
+  [ \$(command -v getprop) ] && getprop | sed -n -e 's/^\[net\.dns.\]: \[\(.*\)\]/\1/p' | sed '/^\s*$/d' | sed 's/^/nameserver /' > \${alpine}/etc/resolv.conf
+  fi
+}
+addresolvconf
+exec proot --link2symlink -0 -r ${alpine}/ -b /dev/ -b /sys/ -b /proc/ -b /sdcard -b /storage -b $HOME -w /home /usr/bin/env TMPDIR=/tmp HOME=/home PREFIX=/usr SHELL=/bin/sh TERM="$TERM" LANG=$LANG PATH=/bin:/usr/bin:/sbin:/usr/sbin /bin/sh --login
+EOM
 	chmod +x $alpine/init
 	ln -sf $alpine/init $PREFIX/bin/startalpine
+	cp $alpine/etc/apk/repositories $alpine/etc/apk/repositories.bak
+	cat > $alpine/etc/apk/repositories <<- EOM
+http://dl-cdn.alpinelinux.org/alpine/latest-stable/main/
+http://dl-cdn.alpinelinux.org/alpine/latest-stable/community/
+http://dl-cdn.alpinelinux.org/alpine/edge/testing/
+EOM
+	printf "nameserver 8.8.8.8\nnameserver 8.8.4.4" > $alpine/etc/resolv.conf
 fi
