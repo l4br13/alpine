@@ -3,7 +3,7 @@ this=$(dirname $(realpath $0))
 arch=$(uname -m)
 os=$(uname -o)
 ver=$(curl -s http://dl-cdn.alpinelinux.org/alpine/latest-stable/releases/$arch/latest-releases.yaml | grep -m 1 -o version.* | sed -e 's/[^0-9.]*//g' -e 's/-$//')
-if [ $os = "Android"]; then
+if [ $os = "Android" ]; then
 	if [ ! -e ${PREFIX}/bin/curl ]; then
 		apt install -y curl || {
 			exit 1
