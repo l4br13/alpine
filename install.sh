@@ -3,6 +3,23 @@ this=$(dirname $(realpath $0))
 arch=$(uname -m)
 os=$(uname -o)
 ver=$(curl -s http://dl-cdn.alpinelinux.org/alpine/latest-stable/releases/$arch/latest-releases.yaml | grep -m 1 -o version.* | sed -e 's/[^0-9.]*//g' -e 's/-$//')
+if [ $os = "Android"]; then
+	if [ ! -e ${PREFIX}/bin/curl ]; then
+		apt install -y curl || {
+			exit 1
+		}
+	fi
+	if [ ! -e ${PREFIX}/bin/proot ]; then
+		apt install -y proot || {
+			exit 1
+		}
+	fi
+	if [ ! -e ${PREFIX}/bin/tar ]; then
+		apt install -y tar || {
+			exit 1
+		}
+	fi
+fi
 if [ -z "$ver" ]; then
 	if [ ! -f latest-releases.yaml ]; then
 		echo "internet connection is needed."
@@ -47,6 +64,13 @@ chroot $root /bin/sh --login
 umount -l $root/proc/
 umount -l $root/sys/' > $this/init
 	chmod 700 $this/init
+	cp $this/etc/apk/repositories $this/etc/apk/repositories.bak
+	cat > $this/etc/apk/repositories <<- EOM
+	http://dl-cdn.alpinelinux.org/alpine/latest-stable/main/
+	http://dl-cdn.alpinelinux.org/alpine/latest-stable/community/
+	http://dl-cdn.alpinelinux.org/alpine/edge/testing/
+	EOM
+	printf "nameserver 8.8.8.8\nnameserver 8.8.4.4" > $this/etc/resolv.conf
 elif [ $os = "Android" ]; then
 	alpine="$(realpath $PREFIX/..)/alpine"
 	if [ ! -d $alpine ]; then
