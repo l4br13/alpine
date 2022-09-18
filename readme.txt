@@ -18,4 +18,4 @@ execute the init file inside the repo dir
 
 for any linux, you can directly remove the container dir.
 
-for android , you can remove directly alpine dir on home/../alpine 
+for android , just execute uninstall.sh files.
