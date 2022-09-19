@@ -61,8 +61,8 @@ mount -t proc /proc $root/proc/
 mount -t sysfs /sys $root/sys/
 cp /etc/resolv.conf $root/etc/resolv.conf
 chroot $root /bin/sh --login
-umount -l $root/proc/
-umount -l $root/sys/' > $this/init
+umount -r $root/proc/
+umount -r $root/sys/' > $this/init
 	chmod 700 $this/init
 	cp $this/etc/apk/repositories $this/etc/apk/repositories.bak
 	cat > $this/etc/apk/repositories <<- EOM
