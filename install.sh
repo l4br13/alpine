@@ -2,7 +2,7 @@
 this=$(dirname $(realpath $0))
 arch=$(uname -m)
 os=$(uname -o)
-ver=$(curl -s http://dl-cdn.alpinelinux.org/alpine/latest-stable/releases/$arch/latest-releases.yaml | grep -m 1 -o version.* | sed -e 's/[^0-9.]*//g' -e 's/-$//')
+ver=$(curl -s http://dl-cdn.alpinelinux.org/alpine/edge/releases/$arch/latest-releases.yaml | grep -m 1 -o version.* | sed -e 's/[^0-9.]*//g' -e 's/-$//')
 if [ $os = "Android" ]; then
 	if [ ! -e ${PREFIX}/bin/curl ]; then
 		apt install -y curl || {
@@ -35,9 +35,9 @@ if [ -z "$ver" ]; then
 		fi
 	fi
 else
-	curl --silent --fail --retry 4 -O http://dl-cdn.alpinelinux.org/alpine/latest-stable/releases/$arch/latest-releases.yaml
+	curl --silent --fail --retry 4 -O http://dl-cdn.alpinelinux.org/alpine/edge/releases/$arch/latest-releases.yaml
 	ver=$(cat latest-releases.yaml | grep -m 1 -o version.* | sed -e 's/[^0-9.]*//g' -e 's/-$//')
-	url="http://dl-cdn.alpinelinux.org/alpine/latest-stable/releases/$arch/alpine-minirootfs-${ver}-${arch}.tar.gz"
+	url="http://dl-cdn.alpinelinux.org/alpine/edge/releases/$arch/alpine-minirootfs-${ver}-${arch}.tar.gz"
 	rootfs="alpine-minirootfs-${ver}-${arch}.tar.gz"
 	if [ ! -f $rootfs ]; then
 		curl --progress-bar -L --fail --retry 4 -O $url
@@ -48,15 +48,21 @@ else
 fi
 sha256sum -c --quiet ${rootfs}.sha256 || {
 		printf "$rootfs : corrupted\n"
+		rm -rf $this/$rootfs
+		rm -rf $this/$rootfs.sha256
 		exit 1
 }
-if [ $os = "GNU/Linux" ]; then
-	tar -xf $rootfs
+if [ "$os" == "GNU/Linux" ]; then
+	if [ ! -d $this/rootfs ]; then
+		mkdir $this/rootfs
+	fi
+	tar -xf $rootfs -C $this/rootfs
 	echo '#!/bin/sh
 if [ $(id -u) != 0 ]; then
+	printf "error: alpine need root privileges to run.\n"
 	exit
 fi
-root=$(dirname $(realpath $0))
+root=$(dirname $(realpath $0))/rootfs
 mount -t proc /proc $root/proc/
 mount -t sysfs /sys $root/sys/
 cp /etc/resolv.conf $root/etc/resolv.conf
@@ -64,13 +70,13 @@ chroot $root /bin/sh --login
 umount -r $root/proc/
 umount -r $root/sys/' > $this/init
 	chmod 700 $this/init
-	cp $this/etc/apk/repositories $this/etc/apk/repositories.bak
-	cat > $this/etc/apk/repositories <<- EOM
-	http://dl-cdn.alpinelinux.org/alpine/latest-stable/main/
-	http://dl-cdn.alpinelinux.org/alpine/latest-stable/community/
+	cp $this/rootfs/etc/apk/repositories $this/rootfs/etc/apk/repositories.bak
+	cat > $this/rootfs/etc/apk/repositories <<- EOM
+	http://dl-cdn.alpinelinux.org/alpine/edge/main/
+	http://dl-cdn.alpinelinux.org/alpine/edge/community/
 	http://dl-cdn.alpinelinux.org/alpine/edge/testing/
 	EOM
-	printf "nameserver 8.8.8.8\nnameserver 8.8.4.4" > $this/etc/resolv.conf
+	printf "nameserver 8.8.8.8\nnameserver 8.8.4.4" > $this/rootfs/etc/resolv.conf
 elif [ $os = "Android" ]; then
 	alpine="$(realpath $PREFIX/..)/alpine"
 	if [ ! -d $alpine ]; then
@@ -95,8 +101,8 @@ EOM
 	ln -sf $alpine/init $PREFIX/bin/startalpine
 	cp $alpine/etc/apk/repositories $alpine/etc/apk/repositories.bak
 	cat > $alpine/etc/apk/repositories <<- EOM
-http://dl-cdn.alpinelinux.org/alpine/latest-stable/main/
-http://dl-cdn.alpinelinux.org/alpine/latest-stable/community/
+http://dl-cdn.alpinelinux.org/alpine/edge/main/
+http://dl-cdn.alpinelinux.org/alpine/edge/community/
 http://dl-cdn.alpinelinux.org/alpine/edge/testing/
 EOM
 	printf "nameserver 8.8.8.8\nnameserver 8.8.4.4" > $alpine/etc/resolv.conf
