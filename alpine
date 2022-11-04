@@ -1,12 +1,27 @@
 #!/bin/sh
-os=$(uname -o)
-if [[ $1 != -* ]]; then
-	__com__="$*"
+
+if [ $(id -u) = 0 ]; then
+	printf "$(basename $0): run as (root)\n"
+	printf "Abort.\n"
+	exit 1
 fi
-if [[ -z $__com__ ]]; then
-	opt=$(getopt -n $(basename $0) -o vh -l version,help,install,login -- "$@")
+
+os=$(uname -o)
+
+case $1 in
+	-*)
+		break
+	;;
+	*)
+		com=1
+		__com__=$@
+		break
+	;;
+esac
+
+if [ -z $com ]; then
+	opt=$(getopt -n $(basename $0) -o hvl -l help,version,login -- "$@")
 	if [ $? -ne 0 ]; then
-		printf "Try '$(basename $0) --help' for more information.\n"
 		exit
 	fi
 	eval set -- $opt
@@ -23,10 +38,7 @@ if [[ -z $__com__ ]]; then
 				--version|-v)
 					__version__=1
 				;;
-				--install)
-					__install__=1
-				;;
-				--login)
+				--login|-l)
 					__login__=1
 				;;
 				*)
@@ -37,39 +49,46 @@ if [[ -z $__com__ ]]; then
 		shift
 	done
 fi
-if [[ $os == "GNU/Linux" ]]; then
-	prefix=/usr
-	dir=$prefix/share/alpine
-	tmp=/tmp
-elif [[ $os == "Android" ]]; then
+
+if [ $os = "Android" ]; then
 	prefix=$PREFIX/share
 	dir=$prefix/alpine
-	tmp=$PREFIX/tmp
-fi
-
-if [ $(id -u) != 0 ]; then
-	[ ! -f $prefix/bin/sudo ] || sudo=1
+	tmp=$PREFIX/tmp/alpine
+	root=$dir/rootfs
+	[ -d $tmp ] || mkdir $tmp
+else
+	prefix=/usr
+	dir=$prefix/share/alpine
+	tmp=/tmp/alpine
+	root=$dir/rootfs
+	[ -d $tmp ] || mkdir $tmp
+	if [ $(id -u) != 0 ]; then
+		[ ! -f $prefix/bin/sudo ] || sudo=1
+	fi
 fi
 
 __usage__ () {
-	printf "\n"
 	printf "Usage:	$(basename $0) [command]\n"
-	printf "	$(basename $0) [options] arguments\n"
+	printf "	$(basename $0) [options]\n"
 	printf "\n"
 	printf "Options:\n"
-	printf "	--install [releases]	install linux alpine mini rootfs.\n"
 	printf "	--login			login to linux alpine mini rootfs.\n"
+	printf " -v,	--version		show alpine linux version info.\n"
 	printf " -h,	--help			show help information.\n"
-	printf " -v,	--version		show version info.\n"
 	printf "\n"
-	return 1
-}
-__version__ () {
-	printf "$(basename $0) version 1.0-rc1 (experimental)\n"
 	return 1
 }
 
-__install__ () {
+__version__ () {
+	if [ ! -f $root/etc/os-release ]; then
+		exit 1
+	fi
+	. $root/etc/os-release
+	printf "$PRETTY_NAME\n"
+	return 1
+}
+
+__setup__ () {
 	if [[ $os == "GNU/Linux" ]]; then
 		[ -z $sudo ] || {
 			sudo -v || {
@@ -78,11 +97,13 @@ __install__ () {
 			}
 		}
 	fi
+
+	rel=edge
 	arch=$(uname -m)
-	root=$dir/rootfs
-	rel=latest-stable
-	url=https://dl-cdn.alpinelinux.org
-	ping=$(curl -s $url/alpine --connect-timeout 10)
+	cdn_url=https://dl-cdn.alpinelinux.org
+	ping=$(curl -s $cdn_url/alpine --connect-timeout 10)
+	releases_url=$url/alpine/$rel/releases/$arch/latest-releases.yaml
+
 	if [ ! -d $dir ]; then
 		if [ ! -z $sudo ]; then
 			sudo mkdir $dir
@@ -90,14 +111,14 @@ __install__ () {
 			mkdir $dir
 		fi
 	fi
-	if [ ! -d $root ]; then
+
+	if [ ! -d $rootfs ]; then
 		if [[ ! -z $sudo ]]; then
-			sudo mkdir $root
+			sudo mkdir $rootfs
 		else
-			mkdir $root
+			mkdir $rootfs
 		fi
 	fi
-	rel_url=$url/alpine/$rel/releases/$arch/latest-releases.yaml
 	if [[ ! -z $sudo ]]; then
 		latest_releases=$(curl -s $rel_url -o $dir/$rel-releases.yaml --connect-timeout 10)
 		if [[ -f $dir/$rel-releases.yaml ]]; then
@@ -118,86 +139,39 @@ __install__ () {
 				exit 1
 			}
 			sudo cp $root/etc/apk/repositories $root/etc/apk/repositories.bak
-			sudo rm -rf $tmp/alpine_repositories
-			printf "https://dl-cdn.alpinelinux.org/alpine/$rel/main/\nhttps://dl-cdn.alpinelinux.org/alpine/$rel/community/\nhttps://dl-cdn.alpinelinux.org/alpine/$rel/testing/" > /tmp/alpine_repositories
-			sudo cp $tmp/alpine_repositories $root/etc/apk/repositories
-			sudo rm -rf $tmp/alpine_resolv
-			printf "nameserver 1.1.1.1" > $tmp/alpine_resolv 
-			sudo cp $tmp/alpine_resolv $root/etc/resolv.conf
-			sudo rm -rf $tmp/alpine_profile
-			cp $root/etc/profile $tmp/alpine_profile
-			echo 'PS1="\w \\$ "' >> $tmp/alpine_profile
-			echo 'cd $HOME' >> $tmp/alpine_profile
+			sudo rm -rf $tmp/repositories
+			printf "https://dl-cdn.alpinelinux.org/alpine/$rel/main/\nhttps://dl-cdn.alpinelinux.org/alpine/$rel/community/\nhttps://dl-cdn.alpinelinux.org/alpine/edge/testing/" > $tmp/repositories
+			sudo cp $tmp/repositories $root/etc/apk/repositories
+			sudo rm -rf $tmp/resolv
+			printf "nameserver 1.1.1.1" > $tmp/resolv 
+			sudo cp $tmp/resolv $root/etc/resolv.conf
+			sudo rm -rf $tmp/profile
+			cat $root/etc/profile > $tmp/profile
+			echo 'PS1="\w \\$ "' >> $tmp/profile
+			echo 'cd $HOME' >> $tmp/profile
 			sudo cp $tmp/alpine_profile $root/etc/profile
 		fi
-	else
-		latest_releases=$(curl -s $rel_url -o $dir/$rel-releases.yaml --connect-timeout 10)
-		if [[ -f $dir/$rel-releases.yaml ]]; then
-			version=$(cat $dir/$rel-releases.yaml | grep -m 1 -o version.* | sed -e 's/[^0-9.]*//g' -e 's/-$//')
-			rootfs="alpine-minirootfs-${version}-${arch}.tar.gz"
-			url_rootfs=$url/alpine/$rel/releases/$arch/$rootfs
-			rootfs_file=$dir/$rootfs
-			if [ ! -f $dir/$rootfs ]; then
-				curl --progress-bar -L --fail --retry 4 $url_rootfs -o $rootfs_file || {
-					printf "installation aborted.\n"
-					exit 1
-				}
-			fi
-			tar -xf $rootfs_file -C $root || {
-				printf "extract: error: $rootfs corrupted."
-				rm -rf $rootfs_file
-				printf "installation aborted.\n"
-				exit 1
-			}
-			cp $root/etc/apk/repositories $root/etc/apk/repositories.bak
-			rm -rf $tmp/alpine_repositories
-			printf "https://dl-cdn.alpinelinux.org/alpine/$rel/main/\nhttps://dl-cdn.alpinelinux.org/alpine/$rel/community/\nhttps://dl-cdn.alpinelinux.org/alpine/$rel/testing/" > /tmp/alpine_repositories
-			cp $tmp/alpine_repositories $root/etc/apk/repositories
-			rm -rf $tmp/alpine_resolv
-			printf "nameserver 1.1.1.1" > $tmp/alpine_resolv 
-			cp $tmp/alpine_resolv $root/etc/resolv.conf
-			rm -rf $tmp/alpine_profile
-			cp $root/etc/profile $tmp/alpine_profile
-			echo 'PS1="\w \\$ "' >> $tmp/alpine_profile
-			echo 'cd $HOME' >> $tmp/alpine_profile
-			cp $tmp/alpine_profile $root/etc/profile
-		fi
 	fi
-	sleep 5 &
-	PID=$!
-	i=1
-	sp="/-\|"
-	echo -n ' '
-	while [ -d /proc/$PID ]
-	do
-		sleep 0.2
-		printf "\b${sp:i++%${#sp}:1}"
-	done
-	printf "\b"
-	printf "installed.\n"
 	return 1
 }
 
-__init__ () {
-	if [[ -z $1 ]]; then
-		return 0
-	fi
-	if [[ ! -z $sudo ]]; then
-		old_path=$PATH
+__exec__() {
+	if [ ! -z $sudo ]; then
 		root=$dir/rootfs
-		PATH=$old_path:/bin:/sbin:/usr/bin
+		OLD_PATH=$PATH
+		PATH=$OLD_PATH:/bin:/sbin:/usr/bin
 		sudo mount -t proc /proc $root/proc/
 		sudo mount -t sysfs /sys $root/sys/
 		sudo cp /etc/resolv.conf $root/etc/resolv.conf
 		sudo chroot $root sh -c "$*" || {
 			sudo umount -rq $root/proc/
 			sudo umount -rq $root/sys/
-			PATH=$old_path
+			PATH=$OLD_PATH
 			exit
 		}
 		sudo umount -rq $root/proc/
 		sudo umount -rq $root/sys/
-		PATH=$old_path
+		PATH=$OLD_PATH
 		exit
 	else 
 		old_path=$PATH
@@ -206,7 +180,7 @@ __init__ () {
 		mount -t proc /proc $root/proc/
 		mount -t sysfs /sys $root/sys/
 		cp /etc/resolv.conf $root/etc/resolv.conf
-		chroot $root /bin/sh -c $* || {
+		chroot $root /bin/sh -c "$*" || {
 			umount -r $root/proc/
 			umount -r $root/sys/
 			PATH=$old_path
@@ -220,27 +194,19 @@ __init__ () {
 	return 1
 }
 
-__update__ () {
-	return 1
-}
-
-if [[ ! -z $__version__ ]]; then
-	__version__
-elif [[ ! -z $__help__ ]]; then
+if [ ! -z $__help__ ]; then
 	__usage__
-elif [[ ! -z $__update__ ]]; then
-	__update__
-elif [[ ! -z $__install__ ]]; then
-	__install__
-elif [[ ! -z $__login__ ]]; then
-	__init__ 'sh --login'
-else
-	if [[ ! -f $dir/rootfs/etc/os-release ]]; then
-		printf "$(basename $0): not installed.\n"
-		printf "Try '$(basename $0) --install' to install.\n"
-		exit 1
+elif [ ! -z $__version__ ]; then
+	if [ -f $root/etc/os-release ]; then
+		__version__
 	else
-		__init__ $__com__
+		exit 1
 	fi
-	exit 1
+elif [ ! -z $__login__ ]; then
+	__exec__ "sh --login"
+else
+	if [ ! -f $root/etc/os-release ]; then
+		__setup__
+	fi
+	__exec__ $__com__
 fi

@@ -1,16 +1,23 @@
-# alpine
+# NAME
 alpine - linux mini rootfs wrapper script
 
-# Installation
-```bash
-alpine --install
-```
 
 # Synopsis
-
-alpine [command or options]
+```bash
+$ alpine [command or options]
+```
 
 see more with
 ```bash
-alpine --help
+$ alpine --help
 ```
+
+# Installation
+run the install file as root
+
+# Notes
+
+never run alpine as root, for the security reason
+
+alpine will use directory '/usr/share/alpine'
+the rootfs will be placed on '/usr/share/alpine/rootfs'
