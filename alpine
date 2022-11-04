@@ -20,7 +20,7 @@ case $1 in
 esac
 
 if [ -z $com ]; then
-	opt=$(getopt -n $(basename $0) -o hvl -l help,version,login -- "$@")
+	opt=$(getopt -n $(basename $0) -o hvril -l help,version,reset,install,login -- "$@")
 	if [ $? -ne 0 ]; then
 		exit
 	fi
@@ -37,6 +37,12 @@ if [ -z $com ]; then
 				;;
 				--version|-v)
 					__version__=1
+				;;
+				--reset|-r)
+					__reset__=1
+				;;
+				--install|-i)
+					__install__=1
 				;;
 				--login|-l)
 					__login__=1
@@ -88,7 +94,19 @@ __version__ () {
 	return 1
 }
 
-__setup__ () {
+__reset__ () {
+	printf "Are you sure want to reset [Y/n]? "
+	read c
+	if [ "$c" != "y" ]; then
+		exit 1
+	fi
+	if [ ! -z $sudo ]; then
+		sudo rm -rf $root/*
+	fi
+	return 1
+}
+
+__install__ () {
 
 	if [ $os = "GNU/Linux" ]; then
 		[ -z $sudo ] || {
@@ -153,7 +171,7 @@ __setup__ () {
 			sudo cp $tmp/resolv $root/etc/resolv.conf
 			sudo rm -rf $tmp/profile
 			cat $root/etc/profile > $tmp/profile
-			echo 'PS1="\w \\$ "' >> $tmp/profile
+			echo 'PS1="\W \\$ "' >> $tmp/profile
 			echo 'cd $HOME' >> $tmp/profile
 			sudo cp $tmp/profile $root/etc/profile
 		fi
@@ -219,11 +237,17 @@ elif [ ! -z $__version__ ]; then
 	else
 		exit 1
 	fi
+elif [ ! -z $__reset__ ]; then
+	__reset__
+elif [ ! -z $__install__ ]; then
+	__install__
 elif [ ! -z $__login__ ]; then
 	__exec__ "sh --login"
 else
 	if [ ! -f $root/etc/os-release ]; then
-		__setup__
+		printf "$(basename $0) is not installed.\n"
+		printf "Try 'alpine --install' to install.\n"
+		exit
 	fi
 	__exec__ $__com__
 fi
