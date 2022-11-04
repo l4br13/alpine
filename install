@@ -1,0 +1,18 @@
+#!/bin/sh
+dir=$(dirname $(realpath $0))
+os=$(uname -o)
+if [[ $(id -u) != 0 ]]; then
+	printf "$(basename $0): permission denied\n"
+	exit
+fi
+if [[ ! -f $dir/alpine ]]; then
+	printf "$(basename $0): there is no file."
+	exit
+fi
+if [[ $os == "Android" ]]; then
+	cp $dir/alpine $PREFIX/bin/alpine
+	chmod +x $PREFIX/bin/alpine
+elif [[ $os == "GNU/Linux" ]]; then
+	cp $dir/alpine /usr/bin/alpine
+	chmod +x /usr/bin/alpine
+fi
