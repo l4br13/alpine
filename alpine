@@ -26,7 +26,7 @@ if [ -z $com ]; then
 	fi
 	eval set -- $opt
 	while true; do
-		if [[ $1 == -- ]]; then
+		if [ "$1" = "--" ]; then
 			shift
 			__param__=$@
 			break
@@ -102,6 +102,8 @@ __reset__ () {
 	fi
 	if [ ! -z $sudo ]; then
 		sudo rm -rf $root/*
+	else
+		rm -rf $root/*
 	fi
 	return 1
 }
@@ -187,7 +189,7 @@ __exec__() {
 		if [ ${android%%.*} -lt 8 ]; then
 			[ $(command -v getprop) ] && getprop | sed -n -e 's/^\[net\.dns.\]: \[\(.*\)\]/\1/p' | sed '/^\s*$/d' | sed 's/^/nameserver /' > $root/etc/resolv.conf
 		fi
-		exec proot --link2symlink -0 -r ${alpine}/ -b /dev/ -b /sys/ -b /proc/ -b /sdcard -b /storage -b $HOME -w /home /usr/bin/env TMPDIR=/tmp HOME=/home PREFIX=/usr SHELL=/bin/sh TERM="$TERM" LANG=$LANG PATH=/bin:/usr/bin:/sbin:/usr/sbin sh -c "$*"
+		exec proot --link2symlink -0 -r $root/ -b /dev/ -b /sys/ -b /proc/ -b /sdcard -b /storage -b $HOME -w /home /usr/bin/env TMPDIR=/tmp HOME=/home PREFIX=/usr SHELL=/bin/sh TERM="$TERM" LANG=$LANG PATH=/bin:/usr/bin:/sbin:/usr/sbin sh -c "$*"
 		return 1
 	else
 		if [ ! -z $sudo ]; then
