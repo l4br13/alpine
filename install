@@ -1,9 +1,11 @@
 #!/bin/sh
 dir=$(dirname $(realpath $0))
 os=$(uname -o)
-if [[ $(id -u) != 0 ]]; then
-	printf "$(basename $0): permission denied\n"
-	exit
+if [ "$os" = "GNU/Linux" ]; then
+	if [[ $(id -u) != 0 ]]; then
+		printf "$(basename $0): permission denied\n"
+		exit
+	fi
 fi
 if [[ ! -f $dir/alpine ]]; then
 	printf "$(basename $0): there is no file."
