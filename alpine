@@ -89,7 +89,8 @@ __version__ () {
 }
 
 __setup__ () {
-	if [[ $os == "GNU/Linux" ]]; then
+
+	if [ $os = "GNU/Linux" ]; then
 		[ -z $sudo ] || {
 			sudo -v || {
 				printf "$(basename $0): permission denied\n"
@@ -98,11 +99,11 @@ __setup__ () {
 		}
 	fi
 
-	rel=edge
+	rel=latest-stable
 	arch=$(uname -m)
-	cdn_url=https://dl-cdn.alpinelinux.org
-	ping=$(curl -s $cdn_url/alpine --connect-timeout 10)
-	releases_url=$url/alpine/$rel/releases/$arch/latest-releases.yaml
+	url=https://dl-cdn.alpinelinux.org
+	ping=$(curl -s $url/alpine --connect-timeout 10)
+	rel_url=$url/alpine/$rel/releases/$arch/latest-releases.yaml
 
 	if [ ! -d $dir ]; then
 		if [ ! -z $sudo ]; then
@@ -112,16 +113,17 @@ __setup__ () {
 		fi
 	fi
 
-	if [ ! -d $rootfs ]; then
+	if [ ! -d $root ]; then
 		if [[ ! -z $sudo ]]; then
-			sudo mkdir $rootfs
+			sudo mkdir $root
 		else
-			mkdir $rootfs
+			mkdir $root
 		fi
 	fi
-	if [[ ! -z $sudo ]]; then
+
+	if [ ! -z $sudo ]; then
 		latest_releases=$(curl -s $rel_url -o $dir/$rel-releases.yaml --connect-timeout 10)
-		if [[ -f $dir/$rel-releases.yaml ]]; then
+		if [ -f $dir/$rel-releases.yaml ]; then
 			version=$(cat $dir/$rel-releases.yaml | grep -m 1 -o version.* | sed -e 's/[^0-9.]*//g' -e 's/-$//')
 			rootfs="alpine-minirootfs-${version}-${arch}.tar.gz"
 			url_rootfs=$url/alpine/$rel/releases/$arch/$rootfs
@@ -140,7 +142,11 @@ __setup__ () {
 			}
 			sudo cp $root/etc/apk/repositories $root/etc/apk/repositories.bak
 			sudo rm -rf $tmp/repositories
-			printf "https://dl-cdn.alpinelinux.org/alpine/$rel/main/\nhttps://dl-cdn.alpinelinux.org/alpine/$rel/community/\nhttps://dl-cdn.alpinelinux.org/alpine/edge/testing/" > $tmp/repositories
+			printf "https://dl-cdn.alpinelinux.org/alpine/$rel/main/\n" > $tmp/repositories
+			printf "https://dl-cdn.alpinelinux.org/alpine/$rel/community/\n" >> $tmp/repositories
+			if [ $rel = "edge" ]; then
+				printf "https://dl-cdn.alpinelinux.org/alpine/edge/testing/\n" >> $tmp/repositories
+			fi
 			sudo cp $tmp/repositories $root/etc/apk/repositories
 			sudo rm -rf $tmp/resolv
 			printf "nameserver 1.1.1.1" > $tmp/resolv 
@@ -149,47 +155,58 @@ __setup__ () {
 			cat $root/etc/profile > $tmp/profile
 			echo 'PS1="\w \\$ "' >> $tmp/profile
 			echo 'cd $HOME' >> $tmp/profile
-			sudo cp $tmp/alpine_profile $root/etc/profile
+			sudo cp $tmp/profile $root/etc/profile
 		fi
 	fi
 	return 1
 }
 
 __exec__() {
-	if [ ! -z $sudo ]; then
+	if [ $os = "Android" ]; then
 		root=$dir/rootfs
-		OLD_PATH=$PATH
-		PATH=$OLD_PATH:/bin:/sbin:/usr/bin
-		sudo mount -t proc /proc $root/proc/
-		sudo mount -t sysfs /sys $root/sys/
-		sudo cp /etc/resolv.conf $root/etc/resolv.conf
-		sudo chroot $root sh -c "$*" || {
+		unset LD_PRELOAD
+		android=$(getprop ro.build.version.release)
+		if [ ${android%%.*} -lt 8 ]; then
+			[ $(command -v getprop) ] && getprop | sed -n -e 's/^\[net\.dns.\]: \[\(.*\)\]/\1/p' | sed '/^\s*$/d' | sed 's/^/nameserver /' > $root/etc/resolv.conf
+		fi
+		exec proot --link2symlink -0 -r ${alpine}/ -b /dev/ -b /sys/ -b /proc/ -b /sdcard -b /storage -b $HOME -w /home /usr/bin/env TMPDIR=/tmp HOME=/home PREFIX=/usr SHELL=/bin/sh TERM="$TERM" LANG=$LANG PATH=/bin:/usr/bin:/sbin:/usr/sbin sh -c "$*"
+		return 1
+	else
+		if [ ! -z $sudo ]; then
+			root=$dir/rootfs
+			OLD_PATH=$PATH
+			PATH=$OLD_PATH:/bin:/sbin:/usr/bin
+			sudo mount -t proc /proc $root/proc/
+			sudo mount -t sysfs /sys $root/sys/
+			sudo cp /etc/resolv.conf $root/etc/resolv.conf
+			sudo chroot $root sh -c "$*" || {
+				sudo umount -rq $root/proc/
+				sudo umount -rq $root/sys/
+				PATH=$OLD_PATH
+				exit
+			}
 			sudo umount -rq $root/proc/
 			sudo umount -rq $root/sys/
 			PATH=$OLD_PATH
 			exit
-		}
-		sudo umount -rq $root/proc/
-		sudo umount -rq $root/sys/
-		PATH=$OLD_PATH
-		exit
-	else 
-		old_path=$PATH
-		root=$dir/rootfs
-		PATH=$old_path:/bin
-		mount -t proc /proc $root/proc/
-		mount -t sysfs /sys $root/sys/
-		cp /etc/resolv.conf $root/etc/resolv.conf
-		chroot $root /bin/sh -c "$*" || {
+		else 
+			old_path=$PATH
+			root=$dir/rootfs
+			PATH=$old_path:/bin
+			mount -t proc /proc $root/proc/
+			mount -t sysfs /sys $root/sys/
+			cp /etc/resolv.conf $root/etc/resolv.conf
+			chroot $root /bin/sh -c "$*" || {
+				umount -r $root/proc/
+				umount -r $root/sys/
+				PATH=$old_path
+				exit
+			}
 			umount -r $root/proc/
 			umount -r $root/sys/
 			PATH=$old_path
 			exit
-		}
-		umount -r $root/proc/
-		umount -r $root/sys/
-		PATH=$old_path
-		exit
+		fi
 	fi
 	return 1
 }
