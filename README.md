@@ -1,4 +1,4 @@
-# NAME
+# Name
 alpine - linux mini rootfs wrapper script
 
 
