@@ -142,7 +142,7 @@ __install__ () {
 	fi
 
 	if [ ! -d $root ]; then
-		if [ ! -z $sudo ]; then
+		if [[ ! -z $sudo ]]; then
 			sudo mkdir $root
 		else
 			mkdir $root
@@ -181,7 +181,7 @@ __install__ () {
 			sudo cp $tmp/resolv $root/etc/resolv.conf
 			sudo rm -rf $tmp/profile
 			cat $root/etc/profile > $tmp/profile
-			echo 'PS1="\W \\$ "' >> $tmp/profile
+			echo "PS1='\W \\$ '" >> $tmp/profile
 			echo 'cd $HOME' >> $tmp/profile
 			sudo cp $tmp/profile $root/etc/profile
 		fi
@@ -217,7 +217,7 @@ __install__ () {
 			cp $tmp/resolv $root/etc/resolv.conf
 			rm -rf $tmp/profile
 			cat $root/etc/profile > $tmp/profile
-			echo 'PS1="\W \\$ "' >> $tmp/profile
+			echo "PS1='\W \\$ '" >> $tmp/profile
 			echo 'cd $HOME' >> $tmp/profile
 			cp $tmp/profile $root/etc/profile
 		fi
