@@ -57,14 +57,12 @@ if [ -z $com ]; then
 fi
 
 if [ $os = "Android" ]; then
-	prefix=$PREFIX/share
-	dir=$prefix/alpine
+	dir=$PREFIX/var/lib/alpine
 	tmp=$PREFIX/tmp/alpine
 	root=$dir/rootfs
 	[ -d $tmp ] || mkdir $tmp
 else
-	prefix=/usr
-	dir=$prefix/share/alpine
+	dir=/var/lib/alpine
 	tmp=/tmp/alpine
 	root=$dir/rootfs
 	[ -d $tmp ] || mkdir $tmp
