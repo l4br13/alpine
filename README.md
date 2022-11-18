@@ -19,5 +19,5 @@ run the install file as root
 
 never run alpine as root, for the security reason
 
-alpine will use directory '/usr/share/alpine'
-the rootfs will be placed on '/usr/share/alpine/rootfs'
+alpine will store data to directory '/var/lib/alpine'
+the rootfs will be placed on '/var/lib/alpine/rootfs'
