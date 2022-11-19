@@ -1,0 +1,40 @@
+#!/bin/sh
+if [ $(id -u) = 0 ]; then
+	printf "$(basename $0): do not run as root, Abort.\n"
+	exit
+fi
+dir=$(dirname $(realpath $0));
+src=$dir/src
+out=$dir/out
+if [ ! -d $out ]; then
+	mkdir $out
+fi
+put () {
+	if [ -z $1 ]; then
+		return 0
+	fi
+	if [ ! -f $* ]; then return 0; fi
+	printf "\n" >> $out/alpine
+	cat $@ >> $out/alpine
+	printf "\n" >> $out/alpine
+	return 1
+}
+printf "#!/bin/sh\n" > $out/alpine
+printf "# Build Date $(date)\n" >> $out/alpine
+
+put $src/env.sh
+
+put $src/init.sh
+
+put $src/getopt.sh
+
+for script in $src/function/*
+do
+	put $script
+done
+
+put $src/main.sh
+
+chmod +x $out/alpine
+
+printf "build: out: $out/alpine\n"
