@@ -13,12 +13,17 @@ $ alpine --help
 ```
 
 # Installation
-run the install file as root
+build first using command
+``` bash
+./build
+```
 
-for android in Termux app just do it without root previlege
+then do the install
 ``` bash
 ./install
 ```
+
+for android in Termux app just do the command without root previlege.
 
 after you do the installation.
 it will place alpine to /usr/bin/alpine
