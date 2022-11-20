@@ -7,14 +7,16 @@ if [ "$os" = "GNU/Linux" ]; then
 		exit
 	fi
 fi
-if [ ! -f $dir/alpine ]; then
-	printf "$(basename $0): there is no file."
-	exit
+
+if [ ! -f $dir/out/alpine ]; then
+	printf "install: error: do the build first\n"
+	exit 1
 fi
+
 if [ "$os" = "Android" ]; then
-	cp $dir/alpine $PREFIX/bin/alpine
+	cp $dir/out/alpine $PREFIX/bin/alpine
 	chmod +x $PREFIX/bin/alpine
 elif [ "$os" = "GNU/Linux" ]; then
-	cp $dir/alpine /usr/bin/alpine
+	cp $dir/out/alpine /usr/bin/alpine
 	chmod +x /usr/bin/alpine
 fi
