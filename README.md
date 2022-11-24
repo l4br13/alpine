@@ -1,3 +1,5 @@
+![alt text](https://github.com/l4br13/alpine/blob/main/image/neofetch.png?raw=true)
+
 # Name
 alpine - linux mini rootfs wrapper script
 
