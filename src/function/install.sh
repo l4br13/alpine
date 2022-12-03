@@ -29,7 +29,7 @@ __install__ () {
 	fi
 
 	if [ ! -d $root ]; then
-		if [[ ! -z $sudo ]]; then
+		if [ ! -z $sudo ]; then
 			sudo mkdir $root
 		else
 			mkdir $root
