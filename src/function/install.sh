@@ -17,9 +17,17 @@ __install__ () {
 	})
 	rel=latest-stable
 	if [ ! -z $__param__ ]; then
-		rel=$__param__
+		if [ "$__param__" = "edge" ]; then
+			rel=edge
+		elif [ "$__param__" = "stable" ]; then
+			rel=latest-stable
+		else
+			rel=$__param__
+		fi
 	fi
+
 	rel_url=$url/alpine/$rel/releases/$arch/latest-releases.yaml
+
 	if [ ! -d $dir ]; then
 		if [ ! -z $sudo ]; then
 			sudo mkdir $dir
@@ -37,7 +45,7 @@ __install__ () {
 	fi
 	
 	if [ ! -z $sudo ]; then
-		latest_releases=$(sudo curl -s $rel_url -o $dir/$rel-releases.yaml --connect-timeout 10)
+		latest_releases=$(sudo curl -fs $rel_url -o $dir/$rel-releases.yaml --connect-timeout 10)
 		if [ -f $dir/$rel-releases.yaml ]; then
 			version=$(cat $dir/$rel-releases.yaml | grep -m 1 -o version.* | sed -e 's/[^0-9.]*//g' -e 's/-$//')
 			rootfs="alpine-minirootfs-${version}-${arch}.tar.gz"
@@ -108,6 +116,9 @@ __install__ () {
 			echo 'cd $HOME' >> $tmp/profile
 			cp $tmp/profile $root/etc/profile
 		fi
+	fi
+	if [ -f $root/etc/os-release ]; then
+		__update__
 	fi
 	return 1
 }
