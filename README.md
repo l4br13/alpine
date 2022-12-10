@@ -25,7 +25,7 @@ build then do the install
 ./build --install
 ```
 
-unistall
+uninstall
 ``` bash
 ./build --uninstall
 ```
