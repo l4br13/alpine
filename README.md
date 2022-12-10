@@ -15,14 +15,19 @@ $ alpine --help
 ```
 
 # Installation
-build only
+build command
 ``` bash
-./build --install
+./build
 ```
 
 build then do the install
 ``` bash
 ./build --install
+```
+
+unistall
+``` bash
+./build --uninstall
 ```
 
 for android in Termux app just do the command without root previlege.
