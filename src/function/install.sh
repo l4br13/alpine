@@ -7,6 +7,7 @@ __install__ () {
 			}
 		}
 	fi
+
 	arch=$(uname -m)
 	url=https://dl-cdn.alpinelinux.org
 	mirror_url=$url/alpine/MIRRORS.txt
@@ -15,7 +16,9 @@ __install__ () {
 			cat $dir/MIRRORS.txt
 		fi
 	})
+	
 	rel=latest-stable
+
 	if [ ! -z $__param__ ]; then
 		if [ "$__param__" = "edge" ]; then
 			rel=edge
@@ -79,6 +82,10 @@ __install__ () {
 			echo "PS1='\W \\$ '" >> $tmp/profile
 			echo 'cd $HOME' >> $tmp/profile
 			sudo cp $tmp/profile $root/etc/profile
+		else
+			if [ -z $latest_releases ]; then
+				printf "$(basename $0): install error: internet connection required.\n"
+			fi
 		fi
 	else
 		latest_releases=$(curl -s $rel_url -o $dir/$rel-releases.yaml --connect-timeout 10)
@@ -115,6 +122,10 @@ __install__ () {
 			echo "PS1='\W \\$ '" >> $tmp/profile
 			echo 'cd $HOME' >> $tmp/profile
 			cp $tmp/profile $root/etc/profile
+		else
+			if [ -z $latest_releases ]; then
+				printf "$(basename $0): install error: internet connection required.\n"
+			fi
 		fi
 	fi
 	if [ -f $root/etc/os-release ]; then
