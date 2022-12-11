@@ -15,15 +15,18 @@ __exec__() {
 			PATH=$OLD_PATH:/bin:/sbin:/usr/bin
 			sudo mount -t proc /proc $root/proc/
 			sudo mount -t sysfs /sys $root/sys/
+			sudo mount --rbind /dev $root/dev/
 			sudo cp /etc/resolv.conf $root/etc/resolv.conf
 			sudo chroot $root sh -c "$*" || {
 				sudo umount -rq $root/proc/
 				sudo umount -rq $root/sys/
+				sudo umount --recursive --lazy $root/dev/
 				PATH=$OLD_PATH
 				exit
 			}
 			sudo umount -rq $root/proc/
 			sudo umount -rq $root/sys/
+			sudo umount --recursive --lazy $root/dev/
 			PATH=$OLD_PATH
 			exit
 		else 
@@ -32,15 +35,18 @@ __exec__() {
 			PATH=$old_path:/bin
 			mount -t proc /proc $root/proc/
 			mount -t sysfs /sys $root/sys/
+			mount --rbind /dev $root/dev/
 			cp /etc/resolv.conf $root/etc/resolv.conf
 			chroot $root /bin/sh -c "$*" || {
-				umount -r $root/proc/
-				umount -r $root/sys/
+				umount -rq $root/proc/
+				umount -rq $root/sys/
+				umount --recursive --lazy $root/dev/
 				PATH=$old_path
 				exit
 			}
-			umount -r $root/proc/
-			umount -r $root/sys/
+			umount -rq $root/proc/
+			umount -rq $root/sys/
+			umount --recursive --lazy  $root/dev/
 			PATH=$old_path
 			exit
 		fi
