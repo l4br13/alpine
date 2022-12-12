@@ -16,7 +16,7 @@ var_path=/var
 
 if [ $(uname -o) != "GNU/Linux" ]; then
 	bin_path=$PREFIX/bin
-	var_path=$prefix/var
+	var_path=$PREFIX/var
 fi
 
 opt=$(getopt -n $(basename $0) -o hciu -l help,clean,install,uninstall -- "$@")
@@ -128,7 +128,12 @@ done
 put src/main.sh
 
 chmod +x $out_program
-chown $USER $out_program
+
+if [ $(id -u) = 0 ]; then
+	if [ $(uname -o) = "GNU/Linux" ]; then
+		chown $USER $out_program
+	fi
+fi
 
 if [ ! -z $install ]; then
 	printf "$(basename $0): install\n"
