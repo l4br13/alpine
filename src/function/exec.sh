@@ -16,17 +16,20 @@ __exec__() {
 			sudo mount -t proc /proc $root/proc/
 			sudo mount -t sysfs /sys $root/sys/
 			sudo mount -o bind /dev $root/dev/
+			sudo mount -o bind /run $root/run/
 			sudo cp /etc/resolv.conf $root/etc/resolv.conf
 			sudo chroot $root sh -c "$*" || {
-				sudo umount -rq $root/proc/
-				sudo umount -rq $root/sys/
+				sudo umount --recursive $root/proc/
+				sudo umount --recursive $root/sys/
 				sudo umount --recursive $root/dev/
+				sudo umount --recursive $root/run/
 				PATH=$OLD_PATH
 				exit
 			}
-			sudo umount -rq $root/proc/
-			sudo umount -rq $root/sys/
+			sudo umount --recursive $root/proc/
+			sudo umount --recursive $root/sys/
 			sudo umount --recursive $root/dev/
+			sudo umount --recursive $root/run/
 			PATH=$OLD_PATH
 			exit
 		else 
@@ -36,20 +39,24 @@ __exec__() {
 			mount -t proc /proc $root/proc/
 			mount -t sysfs /sys $root/sys/
 			mount -o bind /dev $root/dev/
+			mount -o bind /run $root/run/
 			cp /etc/resolv.conf $root/etc/resolv.conf
 			chroot $root /bin/sh -c "$*" || {
-				umount -rq $root/proc/
-				umount -rq $root/sys/
+				umount --recursive $root/proc/
+				umount --recursive $root/sys/
 				umount --recursive $root/dev/
+				umount --recursive $root/run/
 				PATH=$old_path
 				exit
 			}
 			umount -rq $root/proc/
 			umount -rq $root/sys/
 			umount --recursive $root/dev/
+			umount --recursive $root/run
 			PATH=$old_path
 			exit
 		fi
 	fi
 	return 1
 }
+
