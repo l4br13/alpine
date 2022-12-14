@@ -13,6 +13,13 @@ fi
 
 bin_path=/usr/bin
 var_path=/var
+this_dir=$(dirname $(realpath $0))
+src_dir=$this_dir/src
+out_dir=$this_dir/out
+file_out=$out_dir/$(basename $this_dir).sh
+program_name=$(basename $this_dir)
+
+cd $this_dir
 
 if [ $(uname -o) != "GNU/Linux" ]; then
 	bin_path=$PREFIX/bin
@@ -55,11 +62,6 @@ while true; do
 	shift
 done
 
-this_dir=$(dirname $(realpath $0))
-src_dir=$this_dir/src
-out_dir=$this_dir/out
-out_program=$out_dir/$(basename $this_dir).sh
-
 if [ ! -d $out_dir ]; then
 	if [ -f $out_dir ]; then
 		rm -rf $out_dir
@@ -82,18 +84,18 @@ fi
 if [ ! -z $uninstall ]; then
 	printf "$(basename $0): uninstall\n"
 	if [ ! -z $sudo ]; then
-		if [ -f $bin_path/alpine ]; then
-			sudo rm -rf $bin_path/alpine
+		if [ -f $bin_path/$program_name ]; then
+			sudo rm -rf $bin_path/$program_name
 		fi
-		if [ -d $var_path/lib/alpine ]; then
-			sudo rm -rf $var_path/lib/alpine
+		if [ -d $var_path/lib/$program_name ]; then
+			sudo rm -rf $var_path/lib/$program_name
 		fi
 	else
-		if [ -f $bin_path/alpine ]; then
-			rm -rf $bin_path/alpine
+		if [ -f $bin_path/$program_name ]; then
+			rm -rf $bin_path/$program_name
 		fi
-		if [ -d $var_path/lib/alpine ]; then
-			rm -rf $var_path/lib/alpine
+		if [ -d $var_path/lib/$program_name ]; then
+			rm -rf $var_path/lib/$program_name
 		fi
 	fi
 	printf "complete.\n"
@@ -105,49 +107,45 @@ put () {
 		return 0
 	fi
 	if [ ! -f $* ]; then return 0; fi
-	printf "\n" >> $out_program
-	cat $@ >> $out_program
-	printf "\n" >> $out_program
+	printf "\n" >> $file_out
+	cat $@ >> $file_out
+	printf "\n" >> $file_out
 	return 1
 }
 
-printf "#!/bin/sh\n" > $out_program
+if [ -f $this_dir/blueprint ]; then
+	printf "#!/bin/sh\n" > $file_out
+	printf "# Build Date $(date)\n" >> $file_out
+	blueprint=$(cat $this_dir/blueprint)
+	for file in $blueprint; do
+		for script in $file; do
+			put $script
+		done
+	done
+fi
 
-printf "# Build Date $(date)\n" >> $out_program
-
-put src/env.sh
-
-put src/init.sh
-
-put src/opt.sh
-
-for file in src/function/*.sh; do
-	put $file
-done
-
-put src/main.sh
-
-chmod +x $out_program
+chmod +x $file_out
 
 if [ $(id -u) = 0 ]; then
 	if [ $(uname -o) = "GNU/Linux" ]; then
-		chown $USER $out_program
+		chown $(id -u) $file_out
 	fi
 fi
 
 if [ ! -z $install ]; then
 	printf "$(basename $0): install\n"
 	if [ ! -z $sudo ]; then
-		sudo cp $out_program $bin_path/alpine
-		sudo chmod +x $bin_path/alpine
-		if [ ! -d $var_path/lib/alpine ]; then
-			sudo mkdir $var_path/lib/alpine
+		sudo cp $file_out $bin_path/$program_name
+		sudo chown 0 $bin_path/$program_name
+		sudo chmod +x $bin_path/$program_name
+		if [ ! -d $var_path/lib/$program_name ]; then
+			sudo mkdir $var_path/lib/$program_name
 		fi
 	else 
-		cp $out_program $bin_path/alpine
-		chmod +x $bin_path/alpine
-		if [ ! -d $var_path/lib/alpine ]; then
-			mkdir $var_path/lib/alpine
+		cp $file_out $bin_path/$program_name
+		chmod +x $bin_path/$program_name
+		if [ ! -d $var_path/lib/$program_name ]; then
+			mkdir $var_path/lib/$program_name
 		fi
 	fi
 	printf "complete.\n"
