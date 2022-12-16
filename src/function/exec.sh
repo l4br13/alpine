@@ -49,8 +49,8 @@ __exec__() {
 				PATH=$old_path
 				exit
 			}
-			umount -rq $root/proc/
-			umount -rq $root/sys/
+			umount --recursive $root/proc/
+			umount --recursive $root/sys/
 			umount --recursive $root/dev/
 			umount --recursive $root/run
 			PATH=$old_path

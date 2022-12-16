@@ -1,6 +1,7 @@
 program=$(basename $0)
 program_version="1.1.0"
 os=$(uname -o)
+
 if [ $os = "Android" ]; then
 	dir=$PREFIX/var/lib/alpine
 	tmp=$PREFIX/tmp/alpine

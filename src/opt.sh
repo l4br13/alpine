@@ -10,7 +10,7 @@ case $1 in
 esac
 
 if [ -z $com ]; then
-	opt=$(getopt -n $(basename $0) -o hvrilu -l help,version,reset,install,login,update -- "$@")
+	opt=$(getopt -n $(basename $0) -o hvdrilu -l help,version,deploy,reset,install,login,update -- "$@")
 	if [ $? -ne 0 ]; then
 		printf "Try '$(basename $0) --help' for more information.\n"
 		exit
@@ -28,6 +28,9 @@ if [ -z $com ]; then
 				;;
 				--version|-v)
 					__version__=1
+				;;
+				--deploy|-d)
+					__deploy__=1
 				;;
 				--reset|-r)
 					__reset__=1

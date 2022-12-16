@@ -1,14 +1,13 @@
-__install__ () {
-	printf "$(basename $0): install\n"
+__deploy__ () {
 	if [ $os = "GNU/Linux" ]; then
 		[ -z $sudo ] || {
+			user=$USER
 			sudo -v || {
 				printf "$(basename $0): permission denied\n"
 				exit 1
 			}
 		}
 	fi
-
 	arch=$(uname -m)
 	url=https://dl-cdn.alpinelinux.org
 	mirror_url=$url/alpine/MIRRORS.txt
@@ -17,37 +16,9 @@ __install__ () {
 			cat $dir/MIRRORS.txt
 		fi
 	})
-	
-	rel=latest-stable
-
-	if [ ! -z $__param__ ]; then
-		if [ "$__param__" = "edge" ]; then
-			rel=edge
-		elif [ "$__param__" = "stable" ]; then
-			rel=latest-stable
-		else
-			rel=$__param__
-		fi
-	fi
-
+	rel=edge
 	rel_url=$url/alpine/$rel/releases/$arch/latest-releases.yaml
-
-	if [ ! -d $dir ]; then
-		if [ ! -z $sudo ]; then
-			sudo mkdir $dir
-		else
-			mkdir $dir
-		fi
-	fi
-
-	if [ ! -d $root ]; then
-		if [ ! -z $sudo ]; then
-			sudo mkdir $root
-		else
-			mkdir $root
-		fi
-	fi
-	
+	root=$(realpath $PWD)
 	if [ ! -z $sudo ]; then
 		latest_releases=$(sudo curl -fs $rel_url -o $dir/$rel-releases.yaml --connect-timeout 10)
 		if [ -f $dir/$rel-releases.yaml ]; then
@@ -61,6 +32,7 @@ __install__ () {
 					exit 1
 				}
 			fi
+			printf "$(basename $0): deploy: $root\n"
 			sudo tar -xf $rootfs_file -C $root || {
 				printf "extract: error: $rootfs corrupted."
 				rm -rf $rootfs_file
@@ -83,6 +55,7 @@ __install__ () {
 			echo "PS1='\W \\$ '" >> $tmp/profile
 			echo 'cd $HOME' >> $tmp/profile
 			sudo cp $tmp/profile $root/etc/profile
+			sudo chown $user --recursive $root
 		else
 			if [ -z $latest_releases ]; then
 				printf "$(basename $0): install error: internet connection required.\n"
@@ -124,6 +97,8 @@ __install__ () {
 			echo "PS1='\W \\$ '" >> $tmp/profile
 			echo 'cd $HOME' >> $tmp/profile
 			cp $tmp/profile $root/etc/profile
+
+			chown $user --recursive $root
 		else
 			if [ -z $latest_releases ]; then
 				printf "$(basename $0): install error: internet connection required.\n"
@@ -131,5 +106,5 @@ __install__ () {
 			fi
 		fi
 	fi
-	return 1
+	exit 0
 }
